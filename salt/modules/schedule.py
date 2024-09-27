@@ -543,14 +543,16 @@ def build_schedule_item(name, **kwargs):
             if not isinstance(validate_when, list):
                 validate_when = [validate_when]
             for _when in validate_when:
-                try:
-                    dateutil_parser.parse(_when)
-                except ValueError:
-                    ret["result"] = False
-                    ret["comment"] = 'Schedule item {} for "when" in invalid.'.format(
-                        _when
-                    )
-                    return ret
+                # test for rrule
+                if not _when.upper()[:5] == "RRULE":
+                    try:
+                        dateutil_parser.parse(_when)
+                    except ValueError:
+                        ret["result"] = False
+                        ret["comment"] = 'Schedule item {} for "when" in invalid.'.format(
+                            _when
+                        )
+                        return ret
 
     for item in [
         "range",

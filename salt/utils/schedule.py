@@ -1120,6 +1120,54 @@ class Schedule:
                     when_ = i
 
                 if not isinstance(when_, datetime.datetime):
+                    # test for rrule
+                    if when_.upper()[:5] == 'RRULE':
+                        whenrrule_ = when_.upper()
+                        rruledict_ = {}
+                        rrule_ = []
+                        dtstart_ = "%Y%m%dT%H%M%S"
+                        freqmap_ = {
+                            "YEARLY": "%Y%m%dT000000",
+                            "MONTHLY": "%Y%m%dT000000",
+                            "WEEKLY": "%Y%m%dT000000",
+                            "DAILY": "%Y%m%dT%H0000",
+                            "HOURLY": "%Y%m%dT%H%M00"
+                        }
+
+                        # to dict
+                        for params in whenrrule_[6:].split(";"):
+                            j = params.split("=")
+                            rruledict_.update({j[0]: j[1]})
+                            # set template
+                            if freqmap_.get(j[1]): dtstart_ = freqmap_.get(j[1])
+                        # set COUNT
+                        rruledict_.update({"COUNT": "1"})
+
+                        # to string
+                        for key, value in rruledict_.items():
+                            rrule_.append("{}={}".format(key, value))
+                        whenrrule_ = "RRULE:{}".format(";".join(rrule_))
+
+                        # timestamp
+                        dtstart_ = now.strftime(dtstart_)
+
+                        # test rrulestr
+                        try:
+                            from dateutil.rrule import rrulestr
+                            from dateutil.rrule import YEARLY, MONTHLY, WEEKLY, DAILY
+                            from dateutil.rrule import HOURLY, MINUTELY, SECONDLY
+                            from dateutil.rrule import MO, TU, WE, TH, FR, SA, SU
+                            when_ = rrulestr(whenrrule_,dtstart=dateutil_parser.parse(dtstart_))[0]
+                        except ValueError:
+                            data[
+                                "_error"
+                            ] = "Invalid dateutil RRULESTR string {}. Ignoring job {}.".format(
+                                i, data["name"]
+                            )
+                            log.error(data["_error"])
+                            return
+
+                if not isinstance(when_, datetime.datetime):
                     try:
                         when_ = dateutil_parser.parse(when_)
                     except ValueError:
